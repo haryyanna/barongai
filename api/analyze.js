@@ -98,10 +98,10 @@ export default async function handler(req, res) {
     '- isBarong: true',
     '- confidence: nilai keyakinan (0.50 - 1.00). Jika Barong terlihat tetapi tertutup sebagian/kurang jelas, tetap klasifikasikan true dan gunakan confidence 0.50-0.69.',
     '- classification: "barong"',
-    '- visualAnalysis: berikan deskripsi warna dominan, motif utama, ornamen, perkiraan bahan, dan gaya desain.',
-    '- philosophy: jelaskan filosofi Barong (simbol kebajikan Dharma, keseimbangan Rwa Bhineda) yang relevan.',
-    '- culturalContext: konteks tradisi budaya Bali.',
-    '- designNotes: catatan saran estetika desain.',
+    '- visualAnalysis: hanya deskripsikan hal yang tampak pada gambar (warna, motif, ornamen, perkiraan bahan, gaya). Jangan menyimpulkan makna budaya dari penampilan saja.',
+    '- philosophy: string kosong. Makna budaya tidak dinilai atau dibuat oleh AI.',
+    '- culturalContext: string kosong. Konteks budaya bersumber dari panel referensi terkurasi di situs.',
+    '- designNotes: catatan estetika visual saja; jangan memberi klaim keaslian atau kesesuaian adat.',
     '',
     'KEMBALIKAN HANYA JSON VALID SESUAI SKEMA.'
   ].join('\n');
