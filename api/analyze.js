@@ -67,10 +67,11 @@ export default async function handler(req, res) {
 
   // -------- Prompt untuk klasifikasi + analisis terstruktur --------
   const SYSTEM_PROMPT = [
-    'Kamu adalah sistem AI penilai kebudayaan Bali yang bertugas mendeteksi dan menganalisis Motif Baju Barong Bali secara KETAT dan AKURAT.',
+    'Kamu adalah sistem visi komputer yang mendeteksi figur, topeng, ilustrasi, dan motif Barong Bali pada gambar. Nilai objek yang terlihat, bukan nama file atau asumsi bahwa gambar harus berupa baju.',
     '',
     'PERINGATAN KRUSIAL: LAKUKAN PENGECEKAN KEASLIAN MOTIF TERLEBIH DAHULU!',
-    'Gambar HARUS BENAR-BENAR merupakan motif Barong Bali (seperti topeng Barong Ket, Barong Macan, Barong Asu, Barong Gajah, Barong Landung) atau pakaian/kain/kaos yang menampilkan ilustrasi/motif figur Barong khas Bali.',
+    'Barong dapat tampak sebagai topeng, patung, ukiran, lukisan, ilustrasi, foto pertunjukan, hiasan, atau motif pada pakaian/kain. Kenali beragam wujud Barong Bali: Barong Ket, Bangkal, Macan, Asu, Gajah, Landung dan variasi lokal. Foto tidak harus menampilkan pakaian.',
+    'Jangan menolak gambar hanya karena Barong tidak memenuhi seluruh bingkai, warna/pencahayaan tidak ideal, detailnya bergaya kartun/abstrak, atau gambar berupa foto pakaian bermotif. Pertimbangkan ciri visual secara keseluruhan: wajah/topeng ekspresif, mata besar, taring, mahkota/gelungan dan ornamen Bali; tidak semua ciri harus hadir sekaligus.',
     '',
     'Jika gambar yang diunggah adalah salah satu dari berikut:',
     '- Foto potret / selfie manusia',
@@ -93,9 +94,9 @@ export default async function handler(req, res) {
     '',
     'JANGAN PERNAH MENGARANG ATAU MENCOCOK-COCOKKAN GAMBAR NON-BARONG DENGAN FILOSOFI BARONG!',
     '',
-    'JIKA DAN HANYA JIKA gambar memang mengandung figur/motif Barong Bali:',
+    'Jika gambar jelas menampilkan Barong Bali atau motif yang secara wajar dapat dikenali sebagai Barong:',
     '- isBarong: true',
-    '- confidence: nilai keyakinan (0.70 - 1.00)',
+    '- confidence: nilai keyakinan (0.50 - 1.00). Jika Barong terlihat tetapi tertutup sebagian/kurang jelas, tetap klasifikasikan true dan gunakan confidence 0.50-0.69.',
     '- classification: "barong"',
     '- visualAnalysis: berikan deskripsi warna dominan, motif utama, ornamen, perkiraan bahan, dan gaya desain.',
     '- philosophy: jelaskan filosofi Barong (simbol kebajikan Dharma, keseimbangan Rwa Bhineda) yang relevan.',
@@ -148,30 +149,35 @@ export default async function handler(req, res) {
   };
 
   try {
-    // Model Gemini 3.6 Flash dengan fallback ke gemini-2.5-flash / gemini-2.0-flash
-    let apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`;
-
-    let response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-client': 'barong-ai-serverless'
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok && response.status === 404) {
-      // Fallback model
-      apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-      response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-client': 'barong-ai-serverless'
-        },
-        body: JSON.stringify(payload)
-      });
+    // Model utama diikuti fallback jika model tidak tersedia, sedang padat,
+    // atau terkena rate limit. Gambar dan prompt tetap sama pada setiap percobaan.
+    const modelCandidates = ['gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'];
+    let response;
+    let lastFetchError;
+    for (const model of modelCandidates) {
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+      try {
+        response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-client': 'barong-ai-serverless'
+          },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(20000)
+        });
+      } catch (fetchError) {
+        lastFetchError = fetchError;
+        console.warn(`[BARONG AI] Gemini ${model} request failed:`, fetchError?.message || fetchError);
+        continue;
+      }
+      if (!response.ok) {
+        console.warn(`[BARONG AI] Gemini ${model} returned HTTP ${response.status}.`);
+      }
+      if (response.ok || ![404, 429, 503].includes(response.status)) break;
     }
+
+    if (!response && lastFetchError) throw lastFetchError;
 
     if (!response.ok) {
       const errText = await response.text().catch(() => '');
@@ -222,10 +228,12 @@ export default async function handler(req, res) {
 
     // -------- Safety normalisasi struktur --------
     const isBarong    = Boolean(parsed.isBarong);
-    const confidence  = Number(parsed.confidence) || 0;
+    const confidence  = Number.isFinite(Number(parsed.confidence)) && Number(parsed.confidence) > 0
+      ? Number(parsed.confidence)
+      : (isBarong ? 0.7 : 0.6);
 
     // Ambigu guard
-    if (isBarong && confidence < 0.5) {
+    if (isBarong && confidence < 0.2) {
       return res.status(200).json({
         isBarong: false,
         confidence: confidence,
