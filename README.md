@@ -15,7 +15,7 @@ Server lokal menyediakan halaman dan `/api/analyze` sekaligus. Jangan mengunggah
 
 Repository ini menerbitkan versi situs statis dari branch `main`. Pastikan **Settings → Pages → Build and deployment** memilih **Deploy from a branch**, branch `main`, folder `/(root)`. Setiap perubahan di `main` akan diterbitkan oleh GitHub Pages.
 
-GitHub Pages hanya menyajikan berkas statis dan tidak menjalankan endpoint `/api/analyze`. Karena itu, situs GitHub Pages menyediakan **mode demo** untuk menguji tampilan; contoh hasilnya tidak menganalisis foto. PDF sumber dan tautan Kementerian Pariwisata tetap tersedia pada menu **Tentang**. Untuk analisis gambar AI sungguhan, gunakan deploy server yang menjalankan fungsi API.
+GitHub Pages hanya menyajikan berkas statis dan tidak menjalankan endpoint `/api/analyze`. Pilih **Mode demo** untuk menguji tampilan tanpa mengirim foto ke AI. Untuk **AI asli** dari situs GitHub Pages, deploy proyek ini ke Vercel, tambahkan `GEMINI_API_KEY` pada Environment Variables Vercel, lalu tempel URL deploy Vercel (contoh `https://nama-proyek.vercel.app`) pada kolom **Alamat server analisis (Vercel)** di halaman Analisis. Pengaturan alamat tersimpan di browser yang digunakan. Jika membuka aplikasi dari URL Vercel, alamat server otomatis memakai domain yang sama.
 
 ## Deploy analisis AI sungguhan ke Vercel dari GitHub
 
@@ -23,6 +23,7 @@ GitHub Pages hanya menyajikan berkas statis dan tidak menjalankan endpoint `/api
 2. Import repository tersebut di Vercel dengan root directory proyek ini.
 3. Di **Project Settings → Environment Variables**, tambahkan `GEMINI_API_KEY` untuk Production (dan Preview bila dipakai).
 4. Deploy atau redeploy. Vercel menyajikan `index.html` dan otomatis menjalankan fungsi di `api/`.
+5. Untuk menghubungkan GitHub Pages, salin URL deployment Vercel dan masukkan ke kolom **Alamat server analisis (Vercel)**. Jangan memasukkan API key ke situs atau repository.
 
 `server.js` hanya untuk pengembangan lokal. Di Vercel, endpoint analisis berjalan sebagai serverless function.
 
