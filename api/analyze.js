@@ -20,7 +20,7 @@
 //   Lihat bagian "structured JSON" di bawah ini.
 // =====================================================================
 
-export default async function handler(req, res) {
+export default async function handler(req, res, runtimeEnv = {}) {
   // -------- CORS / Method guard --------
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -34,7 +34,8 @@ export default async function handler(req, res) {
   }
 
   // -------- Baca API key dari environment atau default key --------
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  const GEMINI_API_KEY = runtimeEnv.GEMINI_API_KEY ||
+    (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined);
 
   // -------- Validasi payload --------
   const { image, mimeType } = req.body || {};
