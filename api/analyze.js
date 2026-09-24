@@ -1,15 +1,14 @@
 // =====================================================================
-// BARONG AI — Serverless Function Endpoint: /api/analyze  (Vercel-compatible)
+// BARONG AI — Server Endpoint: /api/analyze
 // =====================================================================
 // Fungsi ini berada di SERVER-SIDE. API Key Gemini TIDAK PERNAH dikirim
 // ke browser pengguna. Hanya fungsi inilah yang membaca GEMINI_API_KEY
 // dari environment variable server.
 //
 // CARA PENGGUNAAN:
-//   1. Deploy project ke Vercel (atau platform serverless lain yang kompatibel)
-//   2. Atur environment variable GEMINI_API_KEY di dashboard Vercel
-//      (Project Settings → Environment Variables)
-//   3. Frontend otomatis memanggil POST /api/analyze
+//   1. Jalankan server Node.js atau deploy endpoint ini ke hosting server
+//   2. Atur environment variable GEMINI_API_KEY di environment server
+//   3. Frontend memanggil POST /api/analyze
 //
 // FORMAT REQUEST (dari frontend):
 //   {
