@@ -151,7 +151,7 @@ export default async function handler(req, res) {
   try {
     // Model utama diikuti fallback jika model tidak tersedia, sedang padat,
     // atau terkena rate limit. Gambar dan prompt tetap sama pada setiap percobaan.
-    const modelCandidates = ['gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'];
+    const modelCandidates = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash'];
     let response;
     let lastFetchError;
     for (const model of modelCandidates) {
