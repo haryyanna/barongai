@@ -1476,7 +1476,7 @@
             }
 
             // Low confidence check
-            if (typeof json.confidence === 'number' && json.isBarong && json.confidence < 0.2) {
+            if (json.classification !== 'demo-mode' && typeof json.confidence === 'number' && json.isBarong && json.confidence < 0.2) {
                 showAmbiguousImage();
                 return;
             }
