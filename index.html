@@ -443,6 +443,22 @@
                     </p>
                 </div>
 
+                <div class="bg-cream-50 rounded-2xl border border-cream-300/70 p-5 sm:p-6 space-y-4">
+                    <div>
+                        <label for="analysis-mode" class="block text-sm font-semibold text-charcoal-900 mb-2">Mode analisis</label>
+                        <select id="analysis-mode" onchange="saveAnalysisSettings()" class="w-full rounded-xl border border-cream-300 bg-white px-4 py-3 text-sm text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-mutedgold-400">
+                            <option value="demo">Demo — contoh tampilan</option>
+                            <option value="ai">AI asli — analisis Gemini</option>
+                        </select>
+                        <p id="analysis-mode-help" class="mt-2 text-xs leading-relaxed text-warmbrown-600">Mode demo tidak mengirim foto ke layanan AI.</p>
+                    </div>
+                    <div id="api-endpoint-settings" class="space-y-2">
+                        <label for="api-base-url" class="block text-sm font-semibold text-charcoal-900">Alamat server analisis (Vercel)</label>
+                        <input id="api-base-url" type="url" inputmode="url" autocomplete="url" placeholder="https://nama-proyek.vercel.app" oninput="saveAnalysisSettings()" class="w-full rounded-xl border border-cream-300 bg-white px-4 py-3 text-sm text-charcoal-900 placeholder:text-warmbrown-400 focus:outline-none focus:ring-2 focus:ring-mutedgold-400">
+                        <p class="text-xs leading-relaxed text-warmbrown-600">Isi URL deploy Vercel yang memiliki <code>/api/analyze</code>. Bila situs dibuka dari Vercel, kolom ini boleh dikosongkan. API key Gemini tetap disimpan di server.</p>
+                    </div>
+                </div>
+
                 <input type="file" id="file-input" accept="image/jpeg,image/jpg,image/png,image/webp" class="hidden" onchange="handleFileSelect(event)">
 
                 <!-- Upload Area -->
@@ -578,10 +594,13 @@
             </div>
 
             <aside id="demo-mode-notice" class="hidden mb-8 rounded-xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm leading-relaxed text-amber-950" role="status">
-                <strong>Mode demo:</strong> contoh berikut hanya untuk mencoba tampilan. Foto belum dianalisis oleh AI. Tambahkan API key Gemini untuk mengaktifkan analisis sebenarnya.
+                <strong>Mode demo:</strong> contoh berikut hanya untuk mencoba tampilan. Foto belum dianalisis oleh AI.
+            </aside>
+            <aside id="ai-mode-notice" class="hidden mb-8 rounded-xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm leading-relaxed text-sky-950" role="status">
+                <strong>Analisis AI Gemini:</strong> deskripsi visual dihasilkan model AI. Persentase keyakinan bukan penilaian kualitas, keaslian, atau nilai budaya.
             </aside>
 
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14>
 
                 <!-- Column: Original Image -->
                 <div class="lg:col-span-5 space-y-6">
@@ -1161,8 +1180,48 @@
         window.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             setupDropzoneEvents();
+            loadAnalysisSettings();
             maybeShowWelcomeModal();
         });
+
+        function loadAnalysisSettings() {
+            const isStaticPages = location.hostname.endsWith('.github.io');
+            const mode = localStorage.getItem('barongai_analysis_mode') || (isStaticPages ? 'demo' : 'ai');
+            document.getElementById('analysis-mode').value = mode === 'ai' ? 'ai' : 'demo';
+            document.getElementById('api-base-url').value = localStorage.getItem('barongai_api_base_url') || '';
+            saveAnalysisSettings(false);
+        }
+
+        function saveAnalysisSettings(persist = true) {
+            const mode = document.getElementById('analysis-mode').value;
+            const endpoint = document.getElementById('api-base-url').value.trim();
+            if (persist) {
+                try {
+                    localStorage.setItem('barongai_analysis_mode', mode);
+                    if (endpoint) localStorage.setItem('barongai_api_base_url', endpoint);
+                    else localStorage.removeItem('barongai_api_base_url');
+                } catch (e) {}
+            }
+            document.getElementById('analysis-mode-help').textContent = mode === 'demo'
+                ? 'Mode demo tidak mengirim foto ke layanan AI; hasil hanya contoh untuk mencoba tampilan.'
+                : 'Mode ini mengirim foto ke server analisis Gemini. Hasil tidak otomatis diganti contoh demo jika server gagal.';
+        }
+
+        function getAnalysisEndpoint() {
+            const configured = document.getElementById('api-base-url').value.trim();
+            if (configured) {
+                let url;
+                try { url = new URL(configured); } catch (e) { throw new Error('Alamat server belum valid. Masukkan URL deploy Vercel, misalnya https://nama-proyek.vercel.app.'); }
+                if (url.protocol !== 'https:' && url.hostname !== 'localhost' && url.hostname !== '127.0.0.1') {
+                    throw new Error('Alamat server analisis harus menggunakan HTTPS.');
+                }
+                return url.origin + '/api/analyze';
+            }
+            if (location.hostname.endsWith('.github.io')) {
+                throw new Error('Situs GitHub Pages hanya menyediakan halaman statis. Masukkan URL deploy Vercel pada kolom Alamat server analisis.');
+            }
+            return new URL('/api/analyze', location.origin).href;
+        }
 
         // ====== Welcome Modal ======
         function maybeShowWelcomeModal() {
@@ -1356,19 +1415,15 @@
         }
 
         async function runVisionAnalysis(dataUrl) {
+            if (document.getElementById('analysis-mode').value === 'demo') {
+                finishLoadingAndHandleResult(createDemoResponse());
+                return;
+            }
             try {
-                // GitHub Pages only serves static files; it cannot run /api/analyze.
-                // Keep the upload flow testable and clearly marked as a demo there.
-                if (location.hostname.endsWith('.github.io')) {
-                    finishLoadingAndHandleResult(createDemoResponse());
-                    return;
-                }
-
                 // Resize + re-encode uploads to stay below serverless request limits.
-                // Phone photos can be 10 MB while their base64 JSON body exceeds 13 MB.
                 const optimizedImage = await optimizeImageForAnalysis(dataUrl);
                 const base64Clean = optimizedImage.split(',')[1];
-                const res = await fetch('/api/analyze', {
+                const res = await fetch(getAnalysisEndpoint(), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1381,15 +1436,15 @@
 
                 const json = await res.json();
                 if (['analysis-unavailable', 'pending-setup', 'server-busy', 'server-error'].includes(json.classification)) {
-                    console.info('[BARONG AI] API belum siap; menampilkan contoh demo.');
-                    finishLoadingAndHandleResult(createDemoResponse());
+                    console.warn('[BARONG AI] API mengembalikan status layanan:', json.classification);
+                    showNonBarongError(json.message || 'Server Gemini belum siap. Periksa konfigurasi server lalu coba kembali.', 'AI belum siap', true);
                     return;
                 }
                 finishLoadingAndHandleResult(json);
 
             } catch (err) {
-                console.warn('[BARONG AI] /api/analyze unavailable or failed:', err);
-                finishLoadingAndHandleResult(createDemoResponse());
+                console.warn('[BARONG AI] Analisis Gemini gagal:', err);
+                showNonBarongError(err && err.message ? err.message + ' Pastikan endpoint Vercel sudah dideploy dan GEMINI_API_KEY sudah diatur di Environment Variables.' : 'Tidak dapat terhubung ke server analisis. Periksa URL Vercel dan coba lagi.', 'AI tidak terhubung', true);
             }
         }
 
@@ -1523,6 +1578,7 @@
             resultLastImage = true;
             const isDemo = data.classification === 'demo-mode';
             document.getElementById('demo-mode-notice').classList.toggle('hidden', !isDemo);
+            document.getElementById('ai-mode-notice').classList.toggle('hidden', isDemo);
             // Visual
             const va = data.visualAnalysis || {};
             document.getElementById('res-color').textContent    = va.dominantColor || '—';
