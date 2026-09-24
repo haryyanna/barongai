@@ -1553,6 +1553,7 @@
         }
 
         function showNonBarongError(message, titleOverride, isServiceError = false) {
+            clearInterval(loadingInterval);
             document.getElementById('loading-card').classList.add('hidden');
             const titleEl = document.getElementById('error-title');
             const msgEl = document.getElementById('error-message');
