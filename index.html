@@ -574,6 +574,10 @@
                 </h1>
             </div>
 
+            <aside id="demo-mode-notice" class="hidden mb-8 rounded-xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm leading-relaxed text-amber-950" role="status">
+                <strong>Mode demo:</strong> contoh berikut hanya untuk mencoba tampilan. Foto belum dianalisis oleh AI. Tambahkan API key Gemini untuk mengaktifkan analisis sebenarnya.
+            </aside>
+
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14">
 
                 <!-- Column: Original Image -->
@@ -1044,7 +1048,7 @@
                         </div>
                         <div class="bg-cream-50 rounded-xl p-5 border border-cream-300/70">
                             <p class="font-serif-alt text-2xl font-semibold text-charcoal-900">Klasifikasi</p>
-                            <p class="text-[11px] uppercase tracking-widest text-warmbrown-500 mt-1">Verifikasi Barong</p>
+                            <p class="text-[11px] uppercase tracking-widest text-warmbrown-500 mt-1">Deteksi Visual</p>
                         </div>
                         <div class="bg-cream-50 rounded-xl p-5 border border-cream-300/70 col-span-2 sm:col-span-1">
                             <p class="font-serif-alt text-2xl font-semibold text-charcoal-900">Budaya</p>
@@ -1070,6 +1074,24 @@
                     </div>
                 </div>
             </div>
+
+            <section class="mt-16 bg-cream-50 rounded-2xl border border-cream-300/70 p-7 sm:p-9 space-y-5">
+                <p class="text-[11px] font-semibold uppercase tracking-widest text-mutedgold-600">Rujukan yang dapat diperiksa</p>
+                <h2 class="font-display text-2xl sm:text-3xl font-semibold text-charcoal-900">Informasi Baju Barong dan makna warna</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm leading-relaxed text-warmbrown-700">
+                    <div class="space-y-3">
+                        <h3 class="font-serif-alt text-lg font-semibold text-charcoal-900">Warna dalam budaya Bali</h3>
+                        <p>Artikel Ni Wayan Mekarini menguraikan lima warna yang dikaitkan dengan arah dan dewata dalam konteks ritual: hitam–utara–Wisnu, putih–timur–Iswara, merah–selatan–Brahma, kuning–barat–Mahadewa, dan brumbun/campuran–tengah–Siwa.</p>
+                        <p class="text-xs">Ni Wayan Mekarini, “Bahasa Warna dalam Konteks Budaya Bali,” <em>Litera: Jurnal Bahasa dan Sastra</em>, Vol. 7 No. 1 (2021), hlm. 43–51. <a class="underline decoration-mutedgold-500 underline-offset-2" href="wrana-warna.pdf" target="_blank" rel="noopener">Buka PDF artikel</a>.</p>
+                    </div>
+                    <div class="space-y-3">
+                        <h3 class="font-serif-alt text-lg font-semibold text-charcoal-900">Baju Barong dan wisata</h3>
+                        <p>Kementerian Pariwisata RI mengangkat Baju Barong sebagai produk khas Bali yang diminati wisatawan. Artikel ini memberi konteks pariwisata; bukan dasar untuk mengesahkan keaslian motif tertentu.</p>
+                        <p class="text-xs"><a class="underline decoration-mutedgold-500 underline-offset-2" href="https://www.kemenpar.go.id/berita/mengenal-baju-barong-baju-asli-bali-yang-menjadi-incaran-wisatawan" target="_blank" rel="noopener">Baca artikel Kementerian Pariwisata RI</a>.</p>
+                    </div>
+                </div>
+                <p class="text-xs leading-relaxed text-warmbrown-600">Informasi di bagian ini berasal dari sumber yang dicantumkan. AI hanya memberi contoh analisis visual; persentase keyakinannya bukan penilaian budaya atau sertifikat keaslian.</p>
+            </section>
         </section>
 
     </main>
@@ -1332,6 +1354,13 @@
 
         async function runVisionAnalysis(dataUrl) {
             try {
+                // GitHub Pages only serves static files; it cannot run /api/analyze.
+                // Keep the upload flow testable and clearly marked as a demo there.
+                if (location.hostname.endsWith('.github.io')) {
+                    finishLoadingAndHandleResult(createDemoResponse());
+                    return;
+                }
+
                 // Resize + re-encode uploads to stay below serverless request limits.
                 // Phone photos can be 10 MB while their base64 JSON body exceeds 13 MB.
                 const optimizedImage = await optimizeImageForAnalysis(dataUrl);
@@ -1348,17 +1377,33 @@
                 if (!res.ok) throw new Error('HTTP ' + res.status);
 
                 const json = await res.json();
+                if (['analysis-unavailable', 'pending-setup', 'server-busy', 'server-error'].includes(json.classification)) {
+                    console.info('[BARONG AI] API belum siap; menampilkan contoh demo.');
+                    finishLoadingAndHandleResult(createDemoResponse());
+                    return;
+                }
                 finishLoadingAndHandleResult(json);
 
             } catch (err) {
                 console.warn('[BARONG AI] /api/analyze unavailable or failed:', err);
-                finishLoadingAndHandleResult({
-                    isBarong: false,
-                    confidence: 0,
-                    classification: 'analysis-unavailable',
-                    message: 'Layanan analisis gambar sedang tidak tersedia. Periksa koneksi lalu coba lagi.'
-                });
+                finishLoadingAndHandleResult(createDemoResponse());
             }
+        }
+
+        function createDemoResponse() {
+            return {
+                isBarong: true,
+                confidence: 0,
+                classification: 'demo-mode',
+                visualAnalysis: {
+                    dominantColor: 'Contoh warna: merah, hitam, putih, dan emas',
+                    mainMotif: 'Contoh motif: figur Barong Bali',
+                    ornament: 'Contoh ornamen: mahkota dan detail hias',
+                    material: 'Belum dianalisis',
+                    designStyle: 'Contoh tampilan hasil analisis visual'
+                },
+                designNotes: 'Ini teks contoh untuk uji tampilan. AI belum memeriksa foto yang diunggah.'
+            };
         }
 
         function optimizeImageForAnalysis(dataUrl) {
@@ -1473,6 +1518,8 @@
 
         function renderResult(data) {
             resultLastImage = true;
+            const isDemo = data.classification === 'demo-mode';
+            document.getElementById('demo-mode-notice').classList.toggle('hidden', !isDemo);
             // Visual
             const va = data.visualAnalysis || {};
             document.getElementById('res-color').textContent    = va.dominantColor || '—';
@@ -1489,8 +1536,8 @@
             // Confidence
             const conf = Math.max(0, Math.min(1, Number(data.confidence) || 0));
             const confPct = Math.round(conf * 100);
-            document.getElementById('confidence-value').textContent = confPct + '%';
-            document.getElementById('confidence-bar').style.width = confPct + '%';
+            document.getElementById('confidence-value').textContent = isDemo ? 'Demo' : confPct + '%';
+            document.getElementById('confidence-bar').style.width = isDemo ? '0%' : confPct + '%';
 
             setTimeout(() => {
                 document.getElementById('loading-card').classList.add('hidden');
@@ -1829,3 +1876,4 @@
     </script>
 </body>
 </html>
+

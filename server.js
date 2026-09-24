@@ -13,7 +13,8 @@ const types = {
   '.webp': 'image/webp',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
-  '.svg': 'image/svg+xml'
+  '.svg': 'image/svg+xml',
+  '.pdf': 'application/pdf'
 };
 
 // Load local secrets without exposing them to the browser or logs.
@@ -90,3 +91,4 @@ server.listen(port, '127.0.0.1', () => {
   console.log(`Barong AI siap di http://127.0.0.1:${port}`);
   console.log(`Gemini key: ${process.env.GEMINI_API_KEY ? 'tersedia' : 'belum diatur'}`);
 });
+

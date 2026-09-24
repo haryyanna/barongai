@@ -11,7 +11,13 @@ Website analisis visual Barong Bali. Analisis memakai fungsi server-side Gemini 
 
 Server lokal menyediakan halaman dan `/api/analyze` sekaligus. Jangan mengunggah `.env.local` ke GitHub; berkas itu sudah masuk `.gitignore`.
 
-## Deploy ke Vercel dari GitHub
+## GitHub Pages
+
+Repository ini menerbitkan versi situs statis dari branch `main`. Pastikan **Settings → Pages → Build and deployment** memilih **Deploy from a branch**, branch `main`, folder `/(root)`. Setiap perubahan di `main` akan diterbitkan oleh GitHub Pages.
+
+GitHub Pages hanya menyajikan berkas statis dan tidak menjalankan endpoint `/api/analyze`. Karena itu, situs GitHub Pages menyediakan **mode demo** untuk menguji tampilan; contoh hasilnya tidak menganalisis foto. PDF sumber dan tautan Kementerian Pariwisata tetap tersedia pada menu **Tentang**. Untuk analisis gambar AI sungguhan, gunakan deploy server yang menjalankan fungsi API.
+
+## Deploy analisis AI sungguhan ke Vercel dari GitHub
 
 1. Push folder proyek ini ke repository GitHub.
 2. Import repository tersebut di Vercel dengan root directory proyek ini.
@@ -19,3 +25,4 @@ Server lokal menyediakan halaman dan `/api/analyze` sekaligus. Jangan mengunggah
 4. Deploy atau redeploy. Vercel menyajikan `index.html` dan otomatis menjalankan fungsi di `api/`.
 
 `server.js` hanya untuk pengembangan lokal. Di Vercel, endpoint analisis berjalan sebagai serverless function.
+
