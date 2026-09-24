@@ -18,7 +18,7 @@ Folder `functions/api/analyze.js` menyediakan endpoint `/api/analyze` pada Cloud
 1. Masuk ke Cloudflare Dashboard dan salin **Account ID** dari halaman Overview.
 2. Buat API Token Cloudflare dengan izin **Account → Cloudflare Pages → Edit**.
 3. Di repository GitHub, buka **Settings → Secrets and variables → Actions** dan tambahkan secret `CLOUDFLARE_ACCOUNT_ID` serta `CLOUDFLARE_API_TOKEN`.
-4. Pastikan secret `GEMINI_API_KEY` tersedia di repository Actions. Workflow akan menyalinnya ke secret Cloudflare Pages tanpa memasukkan nilainya ke berkas publik.
-5. Push perubahan ke `main` atau jalankan workflow **Deploy BARONG AI to Cloudflare Pages** dari tab Actions.
+4. Push perubahan ke `main` atau jalankan workflow **Deploy BARONG AI to Cloudflare Pages** dari tab Actions. Workflow membuat project dan menerbitkan situs serta Function.
+5. Setelah deployment pertama, di Cloudflare Dashboard buka project Pages **barongai-haryyanna-252476961 → Settings → Variables and Secrets**, lalu tambahkan `GEMINI_API_KEY` sebagai secret untuk Production.
 
-Situs online akan tersedia di `https://barongai-haryyanna-252476961.pages.dev`. Gunakan alamat Cloudflare Pages tersebut untuk analisis AI; GitHub Pages tetap berisi versi statis. Jangan menanamkan key ke HTML atau JavaScript publik.
+Situs online akan tersedia di `https://barongai-haryyanna-252476961.pages.dev`. Gunakan alamat Cloudflare Pages tersebut untuk analisis AI; GitHub Pages tetap berisi versi statis. Secret `GEMINI_API_KEY` di GitHub tidak otomatis dikirim ke Cloudflare. Jangan menanamkan key ke HTML atau JavaScript publik.
