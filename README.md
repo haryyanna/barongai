@@ -1,6 +1,6 @@
 # BARONG AI
 
-Website analisis visual Barong Bali. Analisis visual menggunakan Gemini melalui endpoint server di `api/analyze.js`; API key tidak dikirim ke browser.
+Website analisis visual Barong Bali. Analisis menggunakan Gemini melalui endpoint server di `api/analyze.js`; API key tidak dikirim ke browser.
 
 ## Menjalankan analisis di komputer
 
@@ -11,9 +11,14 @@ Website analisis visual Barong Bali. Analisis visual menggunakan Gemini melalui 
 
 Jangan mengunggah `.env.local` ke GitHub.
 
-## Website GitHub Pages
+## Deploy online dari GitHub ke Cloudflare Pages
 
-Branch `main` menerbitkan website statis. Setiap perubahan yang dikirim ke branch ini akan diterbitkan GitHub Pages. GitHub Actions juga dapat membangun atau menerbitkan berkas statis, tetapi secret Actions hanya tersedia selama workflow berjalan. Secret tersebut tidak tersedia saat pengunjung memakai website, dan workflow bukan server API yang terus aktif untuk menerima foto.
+GitHub Pages hanya menerbitkan berkas statis dan tidak menjalankan endpoint API. Folder `functions/api/analyze.js` menambahkan endpoint `/api/analyze` pada Cloudflare Pages, sehingga halaman dan analisis Gemini berjalan pada domain yang sama.
 
-Karena itu, analisis Gemini online membutuhkan endpoint server yang aktif. API key tidak boleh ditanamkan ke HTML atau JavaScript publik karena dapat dilihat dan disalahgunakan pengunjung. Tanpa server API, website tidak akan menampilkan hasil analisis palsu; pengguna akan mendapat keterangan bahwa layanan belum tersedia.
+1. Di Cloudflare Dashboard, buka **Workers & Pages → Create application → Pages → Connect to Git**.
+2. Hubungkan repository `haryyanna/barongai), pilih branch produksi `main), biarkan build command kosong, dan isi output directory dengan `.`.
+3. Setelah project dibuat, buka **Settings → Variables and Secrets**, tambahkan `GEMINI_API_KEY` sebagai secret untuk Production, lalu simpan.
+4. Jalankan redeploy. Cloudflare Pages akan menerbitkan situs dan menjalankan Function pada `/api/analyze`.
+5. Gunakan URL `.pages.dev` Cloudflare Pages untuk uji coba analisis AI. Perubahan selanjutnya di branch `main` akan diterbitkan otomatis.
 
+Secret `GEMINI_API_KEY` yang tersimpan di GitHub Actions tidak otomatis tersedia bagi Pages Function. Simpan juga key tersebut sebagai secret di pengaturan project Cloudflare Pages. Jangan menanamkan key ke HTML atau JavaScript publik.
