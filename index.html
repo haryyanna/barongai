@@ -3,6 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        // GitHub Pages is static and cannot host /api/analyze. Send visitors to the
+        // Cloudflare Pages deployment, which includes the server-side analysis function.
+        if (window.location.hostname.endsWith('.github.io')) {
+            window.location.replace('https://barongai-haryyanna-252476961.pages.dev/');
+        }
+    </script>
     <meta name="description" content="BARONG AI — Platform budaya Bali modern yang didukung Artificial Intelligence. Kenali makna di balik setiap Baju Barong melalui analisis visual AI.">
     <title>BARONG AI — Tradisi dalam Genggaman Teknologi</title>
     <script src="https://cdn.tailwindcss.com"></script>
